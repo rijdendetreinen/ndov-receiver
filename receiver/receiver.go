@@ -19,24 +19,19 @@ func ReceiveData(exit chan bool) {
 	subscriber.SetLinger(0)
 	subscriber.SetRcvtimeo(1 * time.Second)
 
-	zmqHost := viper.GetString("source.server")
-	envelopes := viper.GetStringMapString("source.envelopes")
+	zmqHost := viper.GetString("ndov.server")
+
+	initializeSources()
 
 	subscriber.Connect(zmqHost)
 	log.WithField("host", zmqHost).Info("Connect to server")
 
-	for key, envelope := range envelopes {
-		log.WithFields(log.Fields{
-			"system":   key,
-			"envelope": envelope,
-		}).Info("Subscribed to envelope")
-		subscriber.SetSubscribe(envelope)
-	}
+	subscribeSources(subscriber)
 
-	listen(subscriber, envelopes, exit)
+	listen(subscriber, exit)
 }
 
-func listen(subscriber *zmq4.Socket, envelopes map[string]string, exit chan bool) {
+func listen(subscriber *zmq4.Socket, exit chan bool) {
 	log.Info("Receiving data...")
 
 	for {
@@ -69,12 +64,18 @@ func listen(subscriber *zmq4.Socket, envelopes map[string]string, exit chan bool
 					"message":  string(msg[1]),
 				}).Error("Error decompressing message. Message ignored")
 			} else {
-				//strings.HasPrefix(envelope, envelopes["arrivals"]):
-				log.WithFields(log.Fields{
-					"envelope": envelope,
-				}).Warning("Unknown envelope")
+				source, found := lookupSource(envelope)
 
-				log.Info(message)
+				if !found {
+					log.WithFields(log.Fields{
+						"envelope": envelope,
+					}).Warning("Unknown envelope")
+					log.Debug(message)
+				} else {
+					log.WithFields(log.Fields{
+						"source": source,
+					}).Info("Process message")
+				}
 			}
 		}
 	}

@@ -1,12 +1,15 @@
-
 ---
-source:
-  server: tcp://127.0.0.01:12345
-  envelopes:
-    arrivals: "/RIG/InfoPlusDASInterface4"
-    departures: "/RIG/InfoPlusDVSInterface4"
-    services: "/RIG/InfoPlusRITInterface2"
-redis:
-  address: :6379
-  password: ""
-  db: 0
+ndov:
+  server: tcp://127.0.0.1:12345
+  sources:
+    dvs: /RIG/InfoPlusDASInterface4
+    das: /RIG/InfoPlusDVSInterface4
+    rit: /RIG/InfoPlusRITInterface2
+    pil: /RIG/InfoPlusPILInterface5
+    vtbl: /RIG/InfoPlusVTBLInterface5
+    lab-v2: /RIG/InfoPlusPILInterface6
+    treinpos: /RIG/NStreinpositiesInterface5
+outputs:
+  redis:
+    type: redis
+    url: redis://127.0.0.1:6379?db=0

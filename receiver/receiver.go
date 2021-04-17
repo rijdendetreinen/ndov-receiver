@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"compress/gzip"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/pebbe/zmq4"
+	"github.com/rijdendetreinen/ndov-receiver/output"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -72,9 +74,15 @@ func listen(subscriber *zmq4.Socket, exit chan bool) {
 					}).Warning("Unknown envelope")
 					log.Debug(message)
 				} else {
-					log.WithFields(log.Fields{
-						"source": source,
-					}).Info("Process message")
+					// Build message string
+					stringMessage := new(strings.Builder)
+					_, err := io.Copy(stringMessage, message)
+
+					if err != nil {
+						panic(err)
+					}
+
+					output.ProcessMessage(source, stringMessage.String())
 				}
 			}
 		}

@@ -5,6 +5,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/rijdendetreinen/ndov-receiver/output"
 	"github.com/rijdendetreinen/ndov-receiver/receiver"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -33,6 +34,8 @@ var listenCmd = &cobra.Command{
 			shutdown()
 			close(shutdownFinished)
 		}()
+
+		output.SetupOutputs()
 
 		go receiver.ReceiveData(exitReceiverChannel)
 

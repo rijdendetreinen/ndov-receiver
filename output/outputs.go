@@ -42,6 +42,14 @@ func SetupOutputs() {
 
 			outputs[outputName] = redisOutput
 
+		case "file":
+			log.WithField("output", outputName).WithField("type", config.OutputType).Info("Setting up output")
+
+			fileOutput := &FileOutput{}
+			fileOutput.Setup(config)
+
+			outputs[outputName] = fileOutput
+
 		default:
 			log.WithField("output", outputName).WithField("type", config.OutputType).Error("Invalid output type")
 		}

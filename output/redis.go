@@ -7,44 +7,35 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var ctx = context.Background()
+
 type RedisOutput struct {
-	output Output
+	config OutputConfig
 	rdb    *redis.Client
 }
 
-var redisOutputs map[string]RedisOutput = make(map[string]RedisOutput)
+func (s RedisOutput) Config() OutputConfig {
+	return s.config
+}
 
-var ctx = context.Background()
-
-func setupRedisOutput(output Output) {
-	opt, err := redis.ParseURL(output.URL)
+func (redisOutput *RedisOutput) Setup(config OutputConfig) {
+	// log.WithField("output", config.Name).Debug("Setting up Redis")
+	redisOutput.config = config
+	opt, err := redis.ParseURL(config.URL)
 
 	if err != nil {
 		panic(err)
 	}
 
-	rdb := redis.NewClient(opt)
-
-	redisOutput := RedisOutput{
-		output: output,
-		rdb:    rdb,
-	}
-
-	redisOutputs[output.Name] = redisOutput
+	redisOutput.rdb = redis.NewClient(opt)
 }
 
-func getRedisOutput(output Output) RedisOutput {
-	return redisOutputs[output.Name]
-}
+func (output RedisOutput) ProcessMessage(source string, message string) {
+	log.WithField("source", source).WithField("output", output.config.Name).Debug("Processing message")
 
-func processRedisMessage(output Output, source string, message string) {
-	redisOutput := getRedisOutput(output)
-
-	log.WithField("source", source).WithField("output", output.Name).Debug("Processing message")
-
-	redisResult := redisOutput.rdb.LPush(ctx, source, message)
+	redisResult := output.rdb.LPush(ctx, source, message)
 
 	if redisResult.Err() != nil {
-		log.WithField("source", source).WithField("output", output.Name).WithError(redisResult.Err()).Error("Error while processing data")
+		log.WithField("source", source).WithField("output", output.config.Name).WithError(redisResult.Err()).Error("Error while processing data")
 	}
 }

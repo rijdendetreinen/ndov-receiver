@@ -5,11 +5,17 @@ import (
 	"github.com/spf13/viper"
 )
 
-type Output struct {
+type OutputConfig struct {
 	Name       string
 	OutputType string
 	URL        string
 	Sources    []string
+}
+
+type Output interface {
+	Setup(config OutputConfig)
+	Config() OutputConfig
+	ProcessMessage(source string, message string)
 }
 
 var outputs map[string]Output = make(map[string]Output)
@@ -19,38 +25,36 @@ func SetupOutputs() {
 
 	outputConfigs := viper.GetStringMap("outputs")
 
-	for outputName, _ := range outputConfigs {
-		output := Output{
+	for outputName := range outputConfigs {
+		config := OutputConfig{
 			Name:       outputName,
 			OutputType: viper.GetString("outputs." + outputName + ".type"),
 			URL:        viper.GetString("outputs." + outputName + ".url"),
 			Sources:    viper.GetStringSlice("outputs." + outputName + ".sources"),
 		}
 
-		switch output.OutputType {
+		switch config.OutputType {
 		case "redis":
-			log.WithField("output", outputName).WithField("type", output.OutputType).Info("Setting up output")
+			log.WithField("output", outputName).WithField("type", config.OutputType).Info("Setting up output")
 
-			setupRedisOutput(output)
+			redisOutput := &RedisOutput{}
+			redisOutput.Setup(config)
 
-			outputs[outputName] = output
+			outputs[outputName] = redisOutput
 
 		default:
-			log.WithField("output", outputName).WithField("type", output.OutputType).Error("Invalid output type")
+			log.WithField("output", outputName).WithField("type", config.OutputType).Error("Invalid output type")
 		}
 	}
 }
 
 func ProcessMessage(source string, message string) {
 	for _, output := range outputs {
-		if !contains(output.Sources, source) {
+		if !contains(output.Config().Sources, source) {
 			continue
 		}
 
-		switch output.OutputType {
-		case "redis":
-			processRedisMessage(output, source, message)
-		}
+		output.ProcessMessage(source, message)
 	}
 }
 

@@ -14,12 +14,11 @@ type RedisOutput struct {
 	rdb    *redis.Client
 }
 
-func (s RedisOutput) Config() OutputConfig {
+func (s *RedisOutput) Config() OutputConfig {
 	return s.config
 }
 
 func (redisOutput *RedisOutput) Setup(config OutputConfig) {
-	// log.WithField("output", config.Name).Debug("Setting up Redis")
 	redisOutput.config = config
 	opt, err := redis.ParseURL(config.URL)
 
@@ -30,7 +29,7 @@ func (redisOutput *RedisOutput) Setup(config OutputConfig) {
 	redisOutput.rdb = redis.NewClient(opt)
 }
 
-func (output RedisOutput) ProcessMessage(source string, message string) {
+func (output *RedisOutput) ProcessMessage(source string, message string) {
 	log.WithField("source", source).WithField("output", output.config.Name).Debug("Processing message")
 
 	redisResult := output.rdb.LPush(ctx, source, message)

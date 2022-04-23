@@ -29,6 +29,6 @@ func (output *FileOutput) ProcessMessage(source string, message string) {
 	err := ioutil.WriteFile(filename, []byte(message), 0644)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
 	}
 }
